@@ -6,7 +6,7 @@ It also includes the stan file required to run stan
 
 It requires R with libraries 'rstan' and 'shynistan'.
 
-deconvolution_ha_profiles.R : the main script that call stan in R via rstan
+stellar_deconvolution_rstan.R: the main script that call stan in R via rstan
 
 stellar_rot_profile.R : includes functions to create the stellar rotation profile, and diagnosis plot once the model has been run
 
