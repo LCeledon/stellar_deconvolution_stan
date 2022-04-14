@@ -29,10 +29,9 @@ center_g <- function(g){
   return (new_g)
 }
 
-
 get_g <- function(x, line, vsini, epsilon = 0.6) {
   delta = (line*vsini)/299792
-  return (G_function( x - line, delta, epsilon))
+  return (G_function(x+line, delta, epsilon))
 }
 
 m_gaussians <- function(x,a,b,c) {
@@ -191,4 +190,81 @@ plot_convolved_profiles <- function(x, y, g_func, params_matrix, flux_sim_conv,
   lines(x, y, col='black', type='l', lwd=3)
   legend('bottomleft', legend=c('Input Profile','Stan Median Profile','Stan Sample Profile'),
          col=c('black','green','blue'), lty=1)
+}
+
+get_mode_profile_stan <- function(a, b, c){
+  # compute the mode of the parameters a,b and c
+  # use the hist func with number of bins determined by the Freedman-Diaconis rule
+  # to get the number of bins and passed to hist function
+  mgauss = dim(a)[2]
+  output_m = matrix(nrow=mgauss, ncol=3)
+  for (m in 1:mgauss){
+    a_ = a[,m]
+    output_m[m,1] = get_mode_from_hist(a_)
+    b_ = b[,m]
+    output_m[m,2] = get_mode_from_hist(b_)
+    c_ = c[,m]
+    output_m[m,3] = get_mode_from_hist(c_)
+  }
+  return (output_m)
+}
+
+freedman_diaconis_rule <- function(arr){
+  # given an array, use the Freedman-Diaconis rules to return the number of bins
+  iqr = IQR(arr)
+  bin_width = 2*iqr*(length(arr)**(-1/3))
+  bin_number = (max(arr)-min(arr))/bin_width
+  return(ceiling(bin_number))
+}
+
+get_argmax <- function(arr){
+  narr = length(arr)
+  argmax = 0
+  maxval = -1e100
+  for (n in 1:narr){
+    if (arr[n] >= maxval){
+      maxval = arr[n]
+      argmax = n
+    }
+  }
+  return(argmax)
+}
+
+get_mode_from_hist <- function(arr){
+  nbins = freedman_diaconis_rule(arr)
+  arrhist = hist(arr, breaks=nbins, plot=FALSE)
+  histargmax = get_argmax(arrhist$counts)
+  histmode = arrhist$mids[histargmax]
+  return(histmode)
+}
+
+sqr_sum_stan <- function(x, median_param, y_true){
+  # get the median_param profile and compare with true profile
+  nlength = length(x)
+  y_median = m_gaussians(x, median_param[,1], median_param[,2], median_param[,3])
+  sqr_dif_sum = 0
+  for (n in 1:nlength){
+    aux = (y_true[n] - y_median[n])**2
+    sqr_dif_sum = sqr_dif_sum + aux
+  }
+  return (sqr_dif_sum)
+}
+
+equivalent_width <- function(x, y){
+  # compute the equivalent width of the line.
+  # it assumes is already normalized at zero level
+  # uses the composite trapezoidal rule to perform the integration
+  nlength = length(x)-1
+  int = 0
+  for (n in 1:nlength){
+    int = int + (x[n+1]-x[n])*(y[n+1]+y[n])
+  }
+  return (-0.5*int)
+}
+
+equivalent_width_dif <- function(x, median_param, y_true){
+  y_median = m_gaussians(x, median_param[,1], median_param[,2], median_param[,3])
+  ew1 = equivalent_width(x, y_true)
+  ew2 = equivalent_width(x, y_median)
+  return (ew1 - ew2)
 }
