@@ -31,7 +31,7 @@ center_g <- function(g){
 
 get_g <- function(x, line, vsini, epsilon = 0.6) {
   delta = (line*vsini)/299792
-  return (G_function(x+line, delta, epsilon))
+  return (G_function(x, delta, epsilon))
 }
 
 m_gaussians <- function(x,a,b,c) {
